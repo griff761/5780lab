@@ -56,28 +56,102 @@ void SystemClock_Config(void);
 
 /* USER CODE END 0 */
 
+int part1(void) {
+	// HAL_Init(); // Reset of all peripherals, init the Flash and Systick
+	SystemClock_Config(); //Configure the system clock
+	/* This example uses HAL library calls to control
+	the GPIOC peripheral. You’ll be redoing this code
+	with hardware register access. */
+	//__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	// Set up a configuration struct to pass to the initialization function
+	/*GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	HAL_GPIO_Init(GPIOC, &initStr); // Initialize pins PC8 & PC9
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); // Start PC8 high*/
+	
+	GPIOC -> MODER |= GPIO_MODER_MODER6_0; // set MODER low bit to 1
+	GPIOC -> MODER &= ~GPIO_MODER_MODER6_1; // set MODER high bit to 0
+	GPIOC -> OSPEEDR |= GPIO_OSPEEDR_OSPEEDR6_0; // set speed to low
+	GPIOC -> PUPDR &= ~GPIO_PUPDR_PUPDR6; // set pullup reg to 00
+	
+	GPIOC -> MODER |= GPIO_MODER_MODER7_0;
+	GPIOC -> MODER &= ~GPIO_MODER_MODER7_1; // set MODER high bit to 0
+	GPIOC -> OSPEEDR |= GPIO_OSPEEDR_OSPEEDR7_0; // set speed to low
+	GPIOC -> PUPDR &= ~GPIO_PUPDR_PUPDR7; // set pullup reg to 00
+	
+	GPIOC -> ODR ^= GPIO_ODR_6; // start PIN6 high
+	
+	while (1) {
+	HAL_Delay(200); // Delay 200ms
+	// Toggle the output state of both PC8 and PC9
+	//HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+		GPIOC -> ODR ^= GPIO_ODR_6;
+		GPIOC -> ODR ^= GPIO_ODR_7;
+	}
+}
+
 /**
   * @brief  The application entry point.
   * @retval int
   */
 int main(void) {
-	HAL_Init(); // Reset of all peripherals, init the Flash and Systick
+	// HAL_Init(); // Reset of all peripherals, init the Flash and Systick
 	SystemClock_Config(); //Configure the system clock
 	/* This example uses HAL library calls to control
 	the GPIOC peripheral. You’ll be redoing this code
 	with hardware register access. */
-	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	//__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+	
 	// Set up a configuration struct to pass to the initialization function
-	GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
+	/*GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
 	GPIO_MODE_OUTPUT_PP,
 	GPIO_SPEED_FREQ_LOW,
 	GPIO_NOPULL};
 	HAL_GPIO_Init(GPIOC, &initStr); // Initialize pins PC8 & PC9
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); // Start PC8 high
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); // Start PC8 high*/
+	
+	GPIOC -> MODER |= GPIO_MODER_MODER6_0; // set MODER low bit to 1
+	GPIOC -> MODER &= ~GPIO_MODER_MODER6_1; // set MODER high bit to 0
+	GPIOC -> OSPEEDR |= GPIO_OSPEEDR_OSPEEDR6_0; // set speed to low
+	GPIOC -> PUPDR &= ~GPIO_PUPDR_PUPDR6; // set pullup reg to 00
+	
+	GPIOC -> MODER |= GPIO_MODER_MODER7_0;
+	GPIOC -> MODER &= ~GPIO_MODER_MODER7_1; // set MODER high bit to 0
+	GPIOC -> OSPEEDR |= GPIO_OSPEEDR_OSPEEDR7_0; // set speed to low
+	GPIOC -> PUPDR |= GPIO_PUPDR_PUPDR7_1; // set pullup reg to 00
+	GPIOC -> PUPDR &= ~GPIO_PUPDR_PUPDR7_0; // set pullup reg to 00
+	
+	GPIOA -> MODER &= ~GPIO_MODER_MODER0; // set MODER to 00 for input
+	GPIOA -> OSPEEDR |= GPIO_OSPEEDR_OSPEEDR0_0; // set speed to low
+	GPIOA -> PUPDR &= ~GPIO_PUPDR_PUPDR0_0; // set pullup reg low bit to 0
+	GPIOA -> PUPDR |= GPIO_PUPDR_PUPDR0_1; // set pullup reg low bit to 0
+	
+	GPIOC -> ODR ^= GPIO_ODR_6; // start PIN6 high
+	
+	uint32_t debouncer = 0;
 	while (1) {
-	HAL_Delay(200); // Delay 200ms
+		debouncer = (debouncer << 1); // Always shift every loop iteration
+		if (GPIOA -> IDR & GPIO_PIN_0) { // If input signal is set/high
+		debouncer |= 0x01; // Set lowest bit of bit-vector
+		}
+		if (debouncer == 0xFFFFFFFF) {
+		// This code triggers repeatedly when button is steady high!
+		}
+		if (debouncer == 0x00000000) {
+		// This code triggers repeatedly when button is steady low!
+		}
+		if (debouncer == 0x7FFFFFFF) {
+			GPIOC -> ODR ^= GPIO_ODR_6;
+			GPIOC -> ODR ^= GPIO_ODR_7;
+		}
+	//HAL_Delay(200); // Delay 200ms
 	// Toggle the output state of both PC8 and PC9
-	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+	//HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
 	}
 }
 
