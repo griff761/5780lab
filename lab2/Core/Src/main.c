@@ -99,8 +99,13 @@ int main(void)
 	HAL_GPIO_Init(GPIOA, &initStr2); // Initialize pin PA0
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET); // Start PC9 high
 	
-	EXTI->IMR |= GPIO_PIN_0;
-	EXTI->RTSR |= GPIO_PIN_0;
+	EXTI->IMR |= EXTI_IMR_IM0;
+	EXTI->RTSR |= EXTI_RTSR_RT0;
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN; // Enable CLK for SYSCFG
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PA; //Route PA0 to EXTI0
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+	NVIC_SetPriority(EXTI0_1_IRQn, 1);
+	//void EXTI0_1_IRQHandler(void);
 
   /* USER CODE END 2 */
 

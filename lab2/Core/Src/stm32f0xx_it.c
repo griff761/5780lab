@@ -145,5 +145,8 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
-
+void EXTI0_1_IRQHandler(void) {
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+	EXTI->PR |= EXTI_PR_PIF0;
+}
 /* USER CODE END 1 */
