@@ -139,12 +139,6 @@ int main(void) {
 		if (GPIOA -> IDR & GPIO_PIN_0) { // If input signal is set/high
 		debouncer |= 0x01; // Set lowest bit of bit-vector
 		}
-		if (debouncer == 0xFFFFFFFF) {
-		// This code triggers repeatedly when button is steady high!
-		}
-		if (debouncer == 0x00000000) {
-		// This code triggers repeatedly when button is steady low!
-		}
 		if (debouncer == 0x7FFFFFFF) {
 			GPIOC -> ODR ^= GPIO_ODR_6;
 			GPIOC -> ODR ^= GPIO_ODR_7;
