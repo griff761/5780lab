@@ -145,7 +145,20 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
+
+
+// EXTI Handler for checkoff 2.1 in lab2
+void EXTI0_1_IRQHandler2_1(void) {
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+	EXTI->PR |= EXTI_PR_PIF0;
+}
+
 void EXTI0_1_IRQHandler(void) {
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+	volatile int i = 0;
+	while (i < 1500000) {
+		i++;
+	}
 	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
 	EXTI->PR |= EXTI_PR_PIF0;
 }
