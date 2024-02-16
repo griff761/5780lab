@@ -72,7 +72,35 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+		// Set up a configuration struct to pass to the initialization function
+	GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	
+	GPIO_InitTypeDef initStr2 = {GPIO_PIN_0,
+	GPIO_MODE_INPUT,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_PULLDOWN};
 
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  /* USER CODE BEGIN 2 */
+	HAL_GPIO_Init(GPIOC, &initStr); // Initialize pins PC6, 7, 8, and 9
+	HAL_GPIO_Init(GPIOA, &initStr2); // Initialize pin PA0
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET); // Start PC9 high
+	
+	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN; // initialize clock for TIM2
+	TIM2 -> PSC = 8000 - 1; // Set PSC to divide clock by 8000
+	TIM2 -> ARR = 250; // Set to 4hz = 250 ms
+	TIM2 -> DIER |= TIM_DIER_UIE; // Enable UEV
+	TIM2 -> CR1 |= TIM_CR1_CEN;
+	
+	NVIC_EnableIRQ(TIM2_IRQn);
+	
+	
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -96,6 +124,11 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+	void TIM2_IRQHandler(void) {
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+		TIM2 -> SR &= ~TIM_SR_UIF;
 }
 
 /**
