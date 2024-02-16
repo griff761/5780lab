@@ -80,7 +80,7 @@ int main(void)
 	GPIO_NOPULL};
 	
 	GPIO_InitTypeDef initStr2 = {GPIO_PIN_6 | GPIO_PIN_7,
-	GPIO_MODE_AF_PP,
+	GPIO_MODE_AF_PP, // Configure to Alternate Function mode
 	GPIO_SPEED_FREQ_LOW,
 	GPIO_NOPULL};
 
@@ -97,29 +97,29 @@ int main(void)
 	TIM2 -> PSC = 8000 - 1; // Set PSC to divide clock by 8000
 	TIM2 -> ARR = 250; // Set to 4hz = 250 ms
 	
-	TIM3 -> PSC = 250 - 1; // Set PSC to divide clock by 32000
-	TIM3 -> ARR = 40; // Set to 0.5hz resolution
+	TIM3 -> PSC = 250 - 1; // Set PSC to divide clock by 250 (equivalent to 1/32 of a ms)
+	TIM3 -> ARR = 40; // 40 * 1/32 = 1.25 ms (aka 800 hz)
 	
 	TIM2 -> DIER |= TIM_DIER_UIE; // Enable UEV
-	TIM2 -> CR1 |= TIM_CR1_CEN;
+	TIM2 -> CR1 |= TIM_CR1_CEN; // Enable TIM2 timer
 	
-	TIM3 -> CCMR1 &= ~TIM_CCMR1_CC1S;
-	TIM3 -> CCMR1 &= ~TIM_CCMR1_CC2S;
-	TIM3 -> CCMR1 |= TIM_CCMR1_OC1M;
-	TIM3 -> CCMR1 |= (6 << 12); // Set OC2M to PWM Output 1 mode (0b10)
-	TIM3 -> CCMR1 |= TIM_CCMR1_OC1PE;
-	TIM3 -> CCMR1 |= TIM_CCMR1_OC2PE;
-	TIM3 -> CCER |= TIM_CCER_CC1E;
-	TIM3 -> CCER |= TIM_CCER_CC2E;
+	TIM3 -> CCMR1 &= ~TIM_CCMR1_CC1S; // Clear CC1S aka set CC1S to 0b0000
+	TIM3 -> CCMR1 &= ~TIM_CCMR1_CC2S; // Clear CC2S
+	TIM3 -> CCMR1 |= TIM_CCMR1_OC1M; // Set OC1M to PWM Output 2 mode (0b111)
+	TIM3 -> CCMR1 |= (6 << 12); // Set OC2M to PWM Output 1 mode (0b110)
+	TIM3 -> CCMR1 |= TIM_CCMR1_OC1PE; // Preload enable channel 1
+	TIM3 -> CCMR1 |= TIM_CCMR1_OC2PE; // Preload enable channel 2
+	TIM3 -> CCER |= TIM_CCER_CC1E; // Enable capture/compare for channel 1
+	TIM3 -> CCER |= TIM_CCER_CC2E; // Enable capture/compare for channel 2
 	
-	TIM3 -> CCR1 = 8;
-	TIM3 -> CCR2 = 8;
+	TIM3 -> CCR1 = 8; // Set duty cycle to 20% (of ARR)
+	TIM3 -> CCR2 = 8; // Set duty cycle to 20% (of ARR)
 	
-	GPIOC -> AFR[0] &= ~GPIO_AFRL_AFSEL6;
-	GPIOC -> AFR[0] &= ~GPIO_AFRL_AFSEL7;
+	GPIOC -> AFR[0] &= ~GPIO_AFRL_AFSEL6; // Set AFSEL6 to 0b0000 to enable output to AF0 for PC6
+	GPIOC -> AFR[0] &= ~GPIO_AFRL_AFSEL7; // Set AFSEL7 to 0b0000 to enable output to AF0 for PC7
 	
-	TIM3 -> CR1 |= TIM_CR1_CEN;
-	NVIC_EnableIRQ(TIM2_IRQn);
+	TIM3 -> CR1 |= TIM_CR1_CEN; // Enable TIM3
+	NVIC_EnableIRQ(TIM2_IRQn); // Enable interrupt handling for TIM2
 	
 	
   /* USER CODE END Init */
