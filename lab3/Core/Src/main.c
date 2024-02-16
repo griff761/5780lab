@@ -93,11 +93,27 @@ int main(void)
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET); // Start PC9 high
 	
 	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN; // initialize clock for TIM2
+	RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN; // initialize clock for TIM3
 	TIM2 -> PSC = 8000 - 1; // Set PSC to divide clock by 8000
 	TIM2 -> ARR = 250; // Set to 4hz = 250 ms
+	
+	TIM3 -> PSC = 16000 - 1; // Set PSC to divide clock by 16000
+	TIM3 -> ARR = 25; // Set to 0.5hz resolution
+	
 	TIM2 -> DIER |= TIM_DIER_UIE; // Enable UEV
 	TIM2 -> CR1 |= TIM_CR1_CEN;
 	
+	TIM3 -> CCMR1 &= ~TIM_CCMR1_CC1S;
+	TIM3 -> CCMR1 &= ~TIM_CCMR1_CC2S;
+	TIM3 -> CCMR1 |= TIM_CCMR1_OC1M;
+	TIM3 -> CCMR1 |= (6 << 12); // Set OC2M to PWM Output 1 mode (0b10)
+	TIM3 -> CCMR1 |= TIM_CCMR1_OC1PE;
+	TIM3 -> CCMR1 |= TIM_CCMR1_OC2PE;
+	TIM3 -> CCER |= TIM_CCER_CC1E;
+	TIM3 -> CCER |= TIM_CCER_CC2E;
+	
+	TIM3 -> CCR1 = 5;
+	TIM3 -> CCR2 = 5;
 	NVIC_EnableIRQ(TIM2_IRQn);
 	
 	
