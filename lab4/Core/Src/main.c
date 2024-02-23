@@ -73,6 +73,7 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 	__HAL_RCC_GPIOB_CLK_ENABLE(); // Enable the GPIOB clock in the RCC
+	__HAL_RCC_USART3_CLK_ENABLE(); // Enable the USART3 clock in the RCC
 		// Set up a configuration struct to pass to the initialization function
 	GPIO_InitTypeDef initStr = {GPIO_PIN_10 | GPIO_PIN_11,
 	GPIO_MODE_AF_PP,
@@ -91,8 +92,8 @@ int main(void)
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
 	HAL_GPIO_Init(GPIOB, &initStr); // Initialize pins PB10, PB11
-	GPIOC -> AFR[0] &= ~GPIO_AFRL_AFSEL6; // Set AFSEL6 to 0b0000 to enable output to AF0 for PC6
-	GPIOC -> AFR[0] &= ~GPIO_AFRL_AFSEL7; // Set AFSEL7 to 0b0000 to enable output to AF0 for PC7
+	GPIOC -> AFR[1] |= GPIO_AFRH_AFSEL10 - 3; // Set AFSEL10 to 0b1100 to enable output to AF0 for PC6
+	GPIOC -> AFR[1] |= GPIO_AFRH_AFSEL11 - 3; // Set AFSEL7 to 0b1100 to enable output to AF0 for PC7
   /* USER CODE END 2 */
 
   /* Infinite loop */
