@@ -116,7 +116,7 @@ void PendSV_Handler(void)
   /* USER CODE END PendSV_IRQn 0 */
   /* USER CODE BEGIN PendSV_IRQn 1 */
 
-  /* USER CODE END PendSV_IRQn 1 */
+	/* USER CODE END PendSV_IRQn 1 */
 }
 
 /**
@@ -141,5 +141,88 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
+
+//void Character_Transmit(void) 
+//{
+//	volatile char string[] = "Wrong key pressed\r\n";
+//	volatile char curr = string[0];
+//	volatile int index = 0;
+//	while (curr != 0) 
+//	{
+//		if ((USART3->ISR) & USART_ISR_TXE) 
+//		{
+//			USART3->TDR = curr;
+//			++index;
+//			curr = string[index];
+//		}
+//	}
+//}
+volatile char lastValue = 0;
+volatile int flag = 0;
+void Character_Transmit(void);
+void ledHelper (int pin, char currValue)
+{
+	switch(currValue)
+	{
+		case '1': 
+			HAL_GPIO_WritePin(GPIOC, pin, GPIO_PIN_SET);
+			break;
+		
+		case '2':
+			HAL_GPIO_TogglePin(GPIOC, pin);
+			break;
+		
+		case '0':
+			HAL_GPIO_WritePin(GPIOC, pin, GPIO_PIN_RESET);
+			break;
+		
+		default:
+			Character_Transmit();
+			flag = 0;
+			break;
+	}
+}
+
+void USART3_4_IRQHandler(void) 
+{
+	volatile char currValue = (USART3 -> RDR);
+	if(flag) 
+	{
+		switch(lastValue) 
+		{
+			case 'r': 
+				ledHelper(GPIO_PIN_6, currValue);
+				flag = 0;
+				break;
+			
+			case 'g':
+				ledHelper(GPIO_PIN_9, currValue);
+				flag = 0;
+				break;
+			
+			case 'b':
+				ledHelper(GPIO_PIN_7, currValue);
+				flag = 0;
+				break;
+				
+			case 'o':
+				ledHelper(GPIO_PIN_8, currValue);
+				flag = 0;
+				break;
+				
+			default:
+				Character_Transmit();
+				flag = 0;
+				break;
+			
+		}
+		
+	}
+	else 
+	{
+			lastValue = currValue;
+			flag = 1;
+	}
+}
 
 /* USER CODE END 1 */

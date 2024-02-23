@@ -74,6 +74,92 @@ void Character_Transmit(void)
   * @brief  The application entry point.
   * @retval int
   */
+int mainSimple(void)
+{
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+	__HAL_RCC_GPIOB_CLK_ENABLE(); // Enable the GPIOB clock in the RCC
+	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	__HAL_RCC_USART3_CLK_ENABLE(); // Enable the USART3 clock in the RCC
+		// Set up a configuration struct to pass to the initialization function
+	GPIO_InitTypeDef initStr = {GPIO_PIN_10 | GPIO_PIN_11,
+	GPIO_MODE_AF_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	
+	GPIO_InitTypeDef ledInitStr = {GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  /* USER CODE BEGIN 2 */
+	HAL_GPIO_Init(GPIOB, &initStr); // Initialize pins PB10, PB11
+	HAL_GPIO_Init(GPIOC, &ledInitStr); // Initialize pin PC6
+	GPIOB -> AFR[1] = 0x4400; //GPIO_AFRH_AFSEL10 - (0x3 << 2); // Set AFSEL10 to 0b1100 to enable output to AF0 for PC6
+	//GPIOB -> AFR[1] |= 0xC000;//GPIO_AFRH_AFSEL11 - (0x3 << 3); // Set AFSEL7 to 0b1100 to enable output to AF0 for PC7
+	
+	int baud_divider = HAL_RCC_GetHCLKFreq() / 115200;
+	USART3 -> BRR |= baud_divider; // Set baud rate
+	
+	USART3 -> CR1 |= USART_CR1_RE;
+	USART3 -> CR1 |= USART_CR1_TE;
+	USART3 -> CR1 |= USART_CR1_UE;
+	
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+	volatile char transmit = 0;
+  while (1)
+  {
+    /* USER CODE END WHILE */
+		if ((USART3 -> ISR) & USART_ISR_RXNE)
+		{
+			transmit = (USART3 -> RDR);
+			if (transmit == 'r') 
+			{
+				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+			}
+			else if (transmit == 'g')
+			{
+				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+			}
+			else if (transmit == 'b')
+			{
+				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+			}
+			else if (transmit == 'o')
+			{
+				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+			}
+			else 
+			{
+				Character_Transmit();
+			}
+			
+		}
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -122,6 +208,11 @@ int main(void)
 	USART3 -> CR1 |= USART_CR1_RE;
 	USART3 -> CR1 |= USART_CR1_TE;
 	USART3 -> CR1 |= USART_CR1_UE;
+	
+	USART3 -> CR1 |= USART_CR1_RXNEIE;
+	
+	NVIC_EnableIRQ(USART3_4_IRQn);
+	NVIC_SetPriority(USART3_4_IRQn, 3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -129,37 +220,11 @@ int main(void)
 	volatile char transmit = 0;
   while (1)
   {
-    /* USER CODE END WHILE */
-		if ((USART3 -> ISR) & USART_ISR_RXNE)
-		{
-			transmit = (USART3 -> RDR);
-			if (transmit == 'r') 
-			{
-				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-			}
-			else if (transmit == 'g')
-			{
-				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
-			}
-			else if (transmit == 'b')
-			{
-				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
-			}
-			else if (transmit == 'o')
-			{
-				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
-			}
-			else 
-			{
-				Character_Transmit();
-			}
-			
-		}
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
-
 
 /**
   * @brief System Clock Configuration
