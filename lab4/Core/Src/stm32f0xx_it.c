@@ -159,28 +159,56 @@ void SysTick_Handler(void)
 //}
 volatile char lastValue = 0;
 volatile int flag = 0;
-void Character_Transmit(void);
+void Character_Transmit(char message[]);
+void successHelper(int pin)
+{
+	switch(pin)
+	{
+		case GPIO_PIN_6:
+			Character_Transmit("red\r\n");
+			break;
+		case GPIO_PIN_9:
+			Character_Transmit("green\r\n");
+			break;
+		case GPIO_PIN_7:
+			Character_Transmit("blue\r\n");
+			break;
+		case GPIO_PIN_8:
+			Character_Transmit("orange\r\n");
+			break;
+		default:
+			Character_Transmit("Unknown, this shouldn't be possible!\r\n");
+			break;
+	}
+}
 void ledHelper (int pin, char currValue)
 {
 	switch(currValue)
 	{
 		case '1': 
 			HAL_GPIO_WritePin(GPIOC, pin, GPIO_PIN_SET);
+			Character_Transmit("Turned on LED: ");
+			successHelper(pin);
 			break;
 		
 		case '2':
 			HAL_GPIO_TogglePin(GPIOC, pin);
+			Character_Transmit("Toggled LED: ");
+			successHelper(pin);
 			break;
 		
 		case '0':
 			HAL_GPIO_WritePin(GPIOC, pin, GPIO_PIN_RESET);
+			Character_Transmit("Turned off LED: ");
+			successHelper(pin);
 			break;
 		
 		default:
-			Character_Transmit();
+			Character_Transmit("Wrong key pressed\r\n");
 			flag = 0;
 			break;
 	}
+	Character_Transmit("CMD?\r\n");
 }
 
 void USART3_4_IRQHandler(void) 
@@ -211,12 +239,12 @@ void USART3_4_IRQHandler(void)
 				break;
 				
 			default:
-				Character_Transmit();
+				Character_Transmit("Wrong key pressed\r\n");
 				flag = 0;
 				break;
 			
 		}
-		
+		//Character_Transmit("CMD?\r\n");
 	}
 	else 
 	{

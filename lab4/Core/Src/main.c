@@ -53,10 +53,9 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void Character_Transmit(void) 
+void Character_Transmit(volatile char message[]) 
 {
-	volatile char string[] = "Wrong key pressed\r\n";
-	volatile char curr = string[0];
+	volatile char curr = message[0];
 	volatile int index = 0;
 	while (curr != 0) 
 	{
@@ -64,7 +63,7 @@ void Character_Transmit(void)
 		{
 			USART3->TDR = curr;
 			++index;
-			curr = string[index];
+			curr = message[index];
 		}
 	}
 }
@@ -152,7 +151,7 @@ int mainSimple(void)
 			}
 			else 
 			{
-				Character_Transmit();
+				Character_Transmit("Wrong key pressed\r\n");
 			}
 			
 		}
@@ -217,6 +216,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	Character_Transmit("CMD?\r\n");
 	volatile char transmit = 0;
   while (1)
   {
