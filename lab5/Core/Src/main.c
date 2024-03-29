@@ -47,6 +47,8 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void i2cGyroWrite(int sadd, int numBytes, int destRegAdd ,int* data);
+void i2cGyroRead(int sadd, int numBytes, int* data, int destRegAdd);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -61,6 +63,132 @@ void SystemClock_Config(void);
   * @retval int
   */
 int main(void)
+{
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+	__HAL_RCC_GPIOB_CLK_ENABLE(); // Enable the GPIOB clock in the RCC
+	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	__HAL_RCC_I2C2_CLK_ENABLE(); // Enable the I2C2 clock in the RCC
+	
+	I2C2 -> TIMINGR |= (0x1 << 28); // Set PRESC
+	I2C2 -> TIMINGR |= (0x13); // Set SCLL
+	I2C2 -> TIMINGR |= (0xF << 8); // Set SCLH
+	I2C2 -> TIMINGR |= (0x2 << 16); // Set SDADEL
+	I2C2 -> TIMINGR |= (0x4 << 20); // Set SCLDEL
+	
+	GPIO_InitTypeDef initStr11 = {GPIO_PIN_11,
+	GPIO_MODE_AF_OD,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL,
+	GPIO_AF1_I2C2};
+	
+	GPIO_InitTypeDef initStr13 = {GPIO_PIN_13,
+	GPIO_MODE_AF_OD,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL,
+	GPIO_AF5_I2C2};
+
+	GPIO_InitTypeDef initStr14 = {GPIO_PIN_14,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	
+	GPIO_InitTypeDef initStr0 = {GPIO_PIN_0,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	
+	GPIO_InitTypeDef initStrLed = {GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  /* USER CODE BEGIN 2 */
+	HAL_GPIO_Init(GPIOB, &initStr11); // Initialize pin PB11
+	HAL_GPIO_Init(GPIOB, &initStr13); // Initialize pin PB13
+	HAL_GPIO_Init(GPIOB, &initStr14); // Initialize pin PB14
+	HAL_GPIO_Init(GPIOC, &initStr0); // Initialize pin PC0
+	HAL_GPIO_Init(GPIOC, &initStrLed); // Initialize LEDs
+	
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); // Set PB14 High
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET); // Set PC0 High
+	
+	I2C2 -> CR1 |= I2C_CR1_PE; // Enable the I2C2 peripheral
+	
+	int axis[4]; // array to write axis data
+	// Address for CtrlReg in gyro
+	int gyroCtrlRegAdd = 0x20;
+	// Int to enable PD, Xen, Yen in gyro
+	int gyroCtrlRegEn = 0xB;
+	
+	i2cGyroWrite(0x69, 1, gyroCtrlRegAdd, &gyroCtrlRegEn);
+	
+	/* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+		HAL_Delay(100);
+		
+		i2cGyroRead(0x69, 4, axis, 0x28); // Read the axis data from gyro into the axis array
+		
+		int16_t x = axis[0] | (axis[1] << 8); // Construct single int from two 8-bit values
+		int16_t y = axis[2] | (axis[3] << 8); // Construct single int from two 8-bit values
+		
+		if (x > 1000)
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET); // Turn on green
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); // Turn off orange
+		}
+		else if (x < -1000)
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET); // Turn off green
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); // Turn on orange
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET); // Turn off green
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); // Turn off orange
+		}
+		
+		if (y > 1000)
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET); // Turn on red
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // Turn off blue
+		}
+		else if (y < -1000)
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET); // Turn off red
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // Turn off blue
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET); // Turn off red
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // Turn off blue
+		}
+  }
+  /* USER CODE END 3 */
+}
+int mainP1(void)
 {
   /* USER CODE BEGIN 1 */
 
@@ -206,6 +334,104 @@ int main(void)
 		
   }
   /* USER CODE END 3 */
+}
+
+void i2cGyroWrite(int sadd, int numBytes, int destRegAdd ,int* data) 
+{
+	//Begin write sequence to slave
+	I2C2 -> CR2 |= (sadd << 1); // Set slave address of gyro
+	I2C2 -> CR2 |= ((numBytes + 1) << 16); // Set num of bytes to transmit
+	I2C2 -> CR2 &= ~(1 << 10); // Set RD_WRN to indicate write
+	I2C2 -> CR2 |= (1 << 13); // Set START
+	
+	while(1) 
+		{
+			if (I2C2 -> ISR & (1<<1)) // check TXIS
+			{
+				I2C2 -> TXDR = destRegAdd | (numBytes > 1 ? 128 : 0);
+				for (int i = 0; i < numBytes; i++)
+				{
+					I2C2 -> TXDR = data[i];
+				}
+				
+				break;
+			}
+			else if (I2C2 -> ISR & (1<<4)) // check NACKF
+			{
+				// should never reach or else there is a config error
+			}
+		}
+	while(1)
+	{
+		if (I2C2 -> ISR & (1<<6)) // check TC for completion
+		{ 
+			I2C2 -> CR2 |= (1 << 14); // set STOP
+			break;
+		}
+	}
+}
+
+void i2cGyroRead(int sadd, int numBytes, int* data, int destRegAdd)
+{
+	I2C2->CR2 &= ~((0xFF << 16) | (0x3FF)); // clear CR2
+	//Begin write sequence to slave
+	I2C2 -> CR2 |= (sadd << 1); // Set slave address of gyro
+	I2C2 -> CR2 |= (1 << 16); // Set num of bytes to transmit
+	I2C2 -> CR2 &= ~(1 << 10); // Set RD_WRN to indicate write
+	I2C2 -> CR2 |= (1 << 13); // Set START
+	
+	while(1) 
+		{
+			if (I2C2 -> ISR & (1<<1)) // check TXIS
+			{
+				I2C2 -> TXDR = destRegAdd | (numBytes > 1 ? 128 : 0);
+				break;
+			}
+			else if (I2C2 -> ISR & (1<<4)) // check NACKF
+			{
+				// should never reach or else there is a config error
+			}
+		}
+	while(1)
+	{
+		if (I2C2 -> ISR & (1<<6)) // check TC for completion
+		{ 
+			break;
+		}
+	}
+	
+	I2C2->CR2 &= ~((0xFF << 16) | (0x3FF)); // clear CR2
+	
+	// Begin read sequence
+	I2C2 -> CR2 |= (sadd << 1); // Set slave address of gyro
+	I2C2 -> CR2 |= (numBytes << 16); // Set num of bytes to transmit
+	I2C2 -> CR2 |= (1 << 10); // Set RD_WRN to indicate read
+	I2C2 -> CR2 |= (1 << 13); // Set START
+	
+	for (int i = 0; i < numBytes; i++)
+	{
+		while(1) 
+		{
+			if (I2C2 -> ISR & (1<<2)) // check RXNE
+			{
+				data[i] = I2C2 -> RXDR;
+				break;
+			}
+			else if (I2C2 -> ISR & (1<<4)) // check NACKF
+			{
+				// should never reach or else there is a config error
+			}
+		}
+	}
+	while(1)
+	{
+		if (I2C2 -> ISR & (1<<6)) // check TC
+		{
+			I2C2 -> CR2 |= (1 << 14); // set STOP
+			break;
+		}
+	}
+	
 }
 
 /**
