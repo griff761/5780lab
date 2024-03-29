@@ -72,7 +72,30 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+	__HAL_RCC_GPIOB_CLK_ENABLE(); // Enable the GPIOB clock in the RCC
+	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	
+	GPIO_InitTypeDef initStr11 = {GPIO_PIN_11,
+	GPIO_MODE_AF_OD,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL,
+	GPIO_AF1_I2C2};
+	
+	GPIO_InitTypeDef initStr13 = {GPIO_PIN_13,
+	GPIO_MODE_AF_OD,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL,
+	GPIO_AF5_I2C2};
 
+	GPIO_InitTypeDef initStr14 = {GPIO_PIN_14,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	
+	GPIO_InitTypeDef initStr0 = {GPIO_PIN_0,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -84,7 +107,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
-
+	HAL_GPIO_Init(GPIOB, &initStr11); // Initialize pin PB11
+	HAL_GPIO_Init(GPIOB, &initStr13); // Initialize pin PB13
+	HAL_GPIO_Init(GPIOB, &initStr14); // Initialize pin PB14
+	HAL_GPIO_Init(GPIOC, &initStr0); // Initialize pin PC0
+	
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); // Set PB14 High
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET); // Set PC0 High
   /* USER CODE END 2 */
 
   /* Infinite loop */
