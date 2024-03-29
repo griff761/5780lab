@@ -74,6 +74,13 @@ int main(void)
   /* USER CODE BEGIN Init */
 	__HAL_RCC_GPIOB_CLK_ENABLE(); // Enable the GPIOB clock in the RCC
 	__HAL_RCC_GPIOC_CLK_ENABLE(); // Enable the GPIOC clock in the RCC
+	__HAL_RCC_I2C2_CLK_ENABLE(); // Enable the I2C2 clock in the RCC
+	
+	I2C2 -> TIMINGR |= (0x1 << 28); // Set PRESC
+	I2C2 -> TIMINGR |= (0x13); // Set SCLL
+	I2C2 -> TIMINGR |= (0xF << 8); // Set SCLH
+	I2C2 -> TIMINGR |= (0x2 << 16); // Set SDADEL
+	I2C2 -> TIMINGR |= (0x4 << 20); // Set SCLDEL
 	
 	GPIO_InitTypeDef initStr11 = {GPIO_PIN_11,
 	GPIO_MODE_AF_OD,
@@ -96,6 +103,11 @@ int main(void)
 	GPIO_MODE_OUTPUT_PP,
 	GPIO_SPEED_FREQ_LOW,
 	GPIO_NOPULL};
+	
+	GPIO_InitTypeDef initStrLed = {GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9,
+	GPIO_MODE_OUTPUT_PP,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -111,10 +123,78 @@ int main(void)
 	HAL_GPIO_Init(GPIOB, &initStr13); // Initialize pin PB13
 	HAL_GPIO_Init(GPIOB, &initStr14); // Initialize pin PB14
 	HAL_GPIO_Init(GPIOC, &initStr0); // Initialize pin PC0
+	HAL_GPIO_Init(GPIOC, &initStrLed); // Initialize LEDs
 	
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); // Set PB14 High
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET); // Set PC0 High
-  /* USER CODE END 2 */
+	
+	I2C2 -> CR1 |= I2C_CR1_PE; // Enable the I2C2 peripheral
+	
+	//Begin write sequence to slave
+	I2C2 -> CR2 |= (0x69 << 1); // Set slave address of gyro
+	I2C2 -> CR2 |= (1 << 16); // Set num of bytes to transmit
+	I2C2 -> CR2 &= ~(1 << 10); // Set RD_WRN to indicate write
+	I2C2 -> CR2 |= (1 << 13); // Set START
+	
+	while(1) 
+	{
+		if (I2C2 -> ISR & (1<<1)) // check TXIS
+		{
+			I2C2 -> TXDR = 0xF;
+			break;
+		}
+		else if (I2C2 -> ISR & (1<<4)) // check NACKF
+		{
+			// should never reach or else there is a config error
+		}
+	}
+	while(1)
+	{
+		if (I2C2 -> ISR & (1<<6)) // check TC for completion
+		{ 
+			break;
+		}
+	}
+	
+	// Begin read sequence to retrieve value from WHO_AM_I
+	I2C2 -> CR2 |= (0x69 << 1); // Set slave address of gyro
+	I2C2 -> CR2 |= (1 << 16); // Set num of bytes to transmit
+	I2C2 -> CR2 |= (1 << 10); // Set RD_WRN to indicate read
+	I2C2 -> CR2 |= (1 << 13); // Set START
+	volatile int rxdrVal = 0;
+	
+	while(1) 
+	{
+		if (I2C2 -> ISR & (1<<2)) // check RXNE
+		{
+			break;
+		}
+		else if (I2C2 -> ISR & (1<<4)) // check NACKF
+		{
+			// should never reach or else there is a config error
+		}
+	}
+	while(1)
+	{
+		if (I2C2 -> ISR & (1<<6)) // check TC
+		{
+			rxdrVal = I2C2 -> RXDR; // grab value from RXDR
+			break;
+		}
+	}
+	
+	I2C2 -> CR2 &= ~(1 << 14); // set STOP
+	
+	// check if RDXR is expected WHO_AM_I value
+	if (rxdrVal == 0xD3)
+	{
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // toggle green if expected value
+	}
+	else
+	{
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6); // toggle red if value is not expected
+	}
+	
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -123,6 +203,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		
   }
   /* USER CODE END 3 */
 }
