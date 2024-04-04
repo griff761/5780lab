@@ -96,6 +96,31 @@ int main(void)
 	HAL_GPIO_Init(GPIOC, &initStrLed);
 	HAL_GPIO_Init(GPIOC, &initStrADC);
 	
+	// Configure ADC for 8 bit, continous, software trigger only
+	ADC1->CFGR1 |= (1 << 4);
+	ADC1->CFGR1 &= ~(1 << 3);
+	ADC1->CFGR1 |= (1 << 13);
+	ADC1->CFGR1 &= ~(1 << 10);
+	ADC1->CFGR1 &= ~(1 << 11);
+
+	ADC1->CHSELR |= (1 << 10); // Enable channel 10 ADC
+	
+	ADC1->CR |= ADC_CR_ADCAL; // Start ADC calibration
+	
+	while ((ADC1->CR & ADC_CR_ADCAL) != 0) // wait for calibration to complete
+	{
+		
+	}
+	
+	ADC1->CR |= ADC_CR_ADEN; // enable the ADC
+	
+	while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) // wait for ADC to be ready
+	{
+		
+	}
+	
+	ADC1->CR |= (1 << 2);
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -103,7 +128,40 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+		int voltage = ADC1->DR;
+		
+		if (voltage < 32) // 1/4 of voltage range
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+		}
+		if (voltage < 64) // 2/4 of voltage range
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+		}
+		if (voltage < 128) // 3/4 of voltage range
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+		}
+		if (voltage < 192) // 4/4 of voltage range
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+		}
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
