@@ -93,8 +93,14 @@ int main(void)
 	GPIO_SPEED_FREQ_LOW,
 	GPIO_NOPULL};
 	
+	GPIO_InitTypeDef initStrDAC = {GPIO_PIN_4,
+	GPIO_MODE_ANALOG,
+	GPIO_SPEED_FREQ_LOW,
+	GPIO_NOPULL};
+	
 	HAL_GPIO_Init(GPIOC, &initStrLed);
 	HAL_GPIO_Init(GPIOC, &initStrADC);
+	HAL_GPIO_Init(GPIOC, &initStrDAC);
 	
 	// Configure ADC for 8 bit, continous, software trigger only
 	ADC1->CFGR1 |= (1 << 4);
@@ -102,6 +108,13 @@ int main(void)
 	ADC1->CFGR1 |= (1 << 13);
 	ADC1->CFGR1 &= ~(1 << 10);
 	ADC1->CFGR1 &= ~(1 << 11);
+	
+	// Configure DAC for software trigger
+	DAC1->CR |= (1 << 5);
+	DAC1->CR |= (1 << 4);
+	DAC1->CR |= (1 << 3);
+
+	DAC1->CR |= (1 << 0); // Enable the DAC
 
 	ADC1->CHSELR |= (1 << 10); // Enable channel 10 ADC
 	
@@ -120,6 +133,9 @@ int main(void)
 	}
 	
 	ADC1->CR |= (1 << 2);
+	
+	const uint8_t triangle_table[32] = {0,15,31,47,63,79,95,111,127,142,158,174,190,206,222,238,254,238,222,206,190,174,158,142,127,111,95,79,63,47,31,15};
+	int i = 0;
 	
   /* USER CODE END 2 */
 
@@ -162,6 +178,14 @@ int main(void)
 		{
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
 		}
+		
+		if (i == 32)
+		{
+			i = 0;
+		}
+		DAC1->DHR8R1 = triangle_table[i];
+		i++;
+		HAL_Delay(1);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
